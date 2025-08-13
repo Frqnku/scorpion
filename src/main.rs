@@ -1,6 +1,8 @@
 use std::fs;
-mod parser;
 
+use crate::display::display_file_info;
+mod display;
+mod parser;
 
 #[derive(Debug)]
 enum ImageFormat {
@@ -26,9 +28,11 @@ fn detect_format(data: &[u8]) -> ImageFormat {
 }
 
 fn main() {
-
     if std::env::args().len() < 2 {
-        eprintln!("Usage: {} <image_file1> <image_file2> ...", std::env::args().next().unwrap());
+        eprintln!(
+            "Usage: {} <image_file1> <image_file2> ...",
+            std::env::args().next().unwrap()
+        );
         return;
     }
 
@@ -38,21 +42,35 @@ fn main() {
     println!();
 
     for filename in std::env::args().skip(1) {
-        if let Err(e) = parser::print_file_info(&filename) {
+        if let Err(e) = display_file_info(&filename) {
             eprintln!("{}", e);
             continue;
         }
 
         match fs::read(&filename) {
-            Ok(data) => {
-                match detect_format(&data) {
-                    ImageFormat::JPEG => { if let Err(e) = parser::parse_jpeg(&data) { eprintln!("{}", e); } }
-                    ImageFormat::PNG => { if let Err(e) = parser::parse_png(&data) { eprintln!("{}", e); } }
-                    ImageFormat::GIF => { if let Err(e) = parser::parse_gif(&data) { eprintln!("{}", e); } }
-                    ImageFormat::BMP => { if let Err(e) = parser::parse_bmp(&data) { eprintln!("{}", e); } }
-                    ImageFormat::Unknown => println!("Format not handled: {}", filename),
+            Ok(data) => match detect_format(&data) {
+                ImageFormat::JPEG => {
+                    if let Err(e) = parser::parse_jpeg(&data) {
+                        eprintln!("{}", e);
+                    }
                 }
-            }
+                ImageFormat::PNG => {
+                    if let Err(e) = parser::parse_png(&data) {
+                        eprintln!("{}", e);
+                    }
+                }
+                ImageFormat::GIF => {
+                    if let Err(e) = parser::parse_gif(&data) {
+                        eprintln!("{}", e);
+                    }
+                }
+                ImageFormat::BMP => {
+                    if let Err(e) = parser::parse_bmp(&data) {
+                        eprintln!("{}", e);
+                    }
+                }
+                ImageFormat::Unknown => println!("Format not handled: {}", filename),
+            },
             Err(e) => eprintln!("Error reading file {}: {}", filename, e),
         }
         println!();
